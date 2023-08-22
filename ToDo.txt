@@ -1,0 +1,18 @@
+Thermocycler ToDo
+
+Cycler_Hardware
+***************
+-Stop funktion, Ventile aus nach Sec
+
+View
+**************
+-Thread 2mal start verhindern
+-Text Font fixieren
+-Message bei Ende "System wird gestoppt"
+
+
+
+Hardware
+*************
+-Ventil bestellen Luft
+

@@ -2,11 +2,15 @@
 
 import atexit
 from threading import *
-#Use FakeGPIO if no Raspberry-Pi is available
-import FakeGPIO as GPIO
-GPIO.VERBOSE = False
-#import RPi.GPIO as GPIO
 from time import sleep, time
+
+try:    
+    import RPi.GPIO as GPIO
+except:
+    #Use FakeGPIO if no Raspberry-Pi is available
+    import FakeGPIO as GPIO
+    GPIO.VERBOSE = False
+
 
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
@@ -145,6 +149,7 @@ class Cycler():
         flush_time_exceed = False
         start_flush_time = time()
 
+
         if self.run_cycler == False:
             return()
 
@@ -193,29 +198,43 @@ class Cycler():
     
         if medium == "Medium-1":
             GPIO.output(self.valve_out_med1, 1)
-            sleep(3)
+            sleep(7)
             GPIO.output(self.valve_cleaning, 1)
             sleep(clean_time)
         elif medium == "Medium-2":
             GPIO.output(self.valve_out_med2, 1)
-            sleep(3)
+            sleep(7)
             GPIO.output(self.valve_cleaning, 1)
             sleep(clean_time)
         else:
             print("Clean-Error: wrong Medium name")
+            
+
+        GPIO.output(self.valve_cleaning, 0)
+        sleep(3)
+        GPIO.output(self.valve_cleaning, 1)
+        sleep(3)
 
         print("Close clean valve")
         GPIO.output(self.valve_cleaning, 0)
+        GPIO.output(self.valve_in_med1,  0)
+        GPIO.output(self.valve_out_med1, 0)
+        GPIO.output(self.valve_in_med2,  0)
+        GPIO.output(self.valve_out_med2, 0)
 
 
     def loop(self):
         """Main loop for cycling. Controls Pump, valves, ... """
 
-        flush_time = 12
-        clean_time = 5
+        flush_time = 30
+        clean_time = 20
+        
+        counter = 0
 
         while (self.run_cycler == True):
             print("Cycling...")
+            counter = counter + 1
+            print(counter)
 
             self.set_valves("Medium-1")
             self.fill("Medium-1")
@@ -226,6 +245,7 @@ class Cycler():
             self.fill("Medium-2")
             self.flush("Medium-2", flush_time)
             self.clean_container("Medium-2", clean_time)
+        self.stop_test()
         print("Cycler_Harware_STOPPED")
 
 if __name__ == "__main__":
