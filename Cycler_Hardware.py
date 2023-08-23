@@ -60,12 +60,13 @@ class Cycler():
             observer(data)
 
 
-    def start_test(self, run_status):
+    def start_test(self):
         self.run_cycler = True
         print("Cycler: Starting")
         ThreadEncoder=Thread(target=self.loop)
         ThreadEncoder.daemon=True
         ThreadEncoder.start()
+        self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST START")
 
 
     def stop_test(self):
@@ -85,8 +86,10 @@ class Cycler():
             print("Stop-Error: wrong Medium name")
         print("Stop Test")
 
+
     def user_inputs(self, inputs):
         self.user_data = inputs
+
 
     def set_valves(self, medium):
         """Sets valves On/Off for Medium"""
@@ -95,7 +98,7 @@ class Cycler():
         if medium == "Medium-1":
             self.current_medium = "Medium-1"
             GPIO.output(self.valve_in_med1,  1)
-            GPIO.output(self.valve_out_med1, 1)
+            GPIO.output(self.valve_out_med1, 0)
             GPIO.output(self.valve_in_med2,  0)
             GPIO.output(self.valve_out_med2, 0)
             print("Valves for Med-1...")
@@ -104,7 +107,7 @@ class Cycler():
             GPIO.output(self.valve_in_med1,  0)
             GPIO.output(self.valve_out_med1, 0)
             GPIO.output(self.valve_in_med2,  1)
-            GPIO.output(self.valve_out_med2, 1)           
+            GPIO.output(self.valve_out_med2, 0)           
             print("Valves for Med-2...")
         else:
             self.current_medium = None
@@ -143,7 +146,7 @@ class Cycler():
 
         GPIO.output(self.pump_1, 0)
         GPIO.output(self.pump_2, 0)
-        return()
+
     
     def flush(self, medium, flush_time):
         flush_time_exceed = False
@@ -185,9 +188,8 @@ class Cycler():
         GPIO.output(self.pump_2, 0)
         GPIO.output(self.pump_1, 0)
         GPIO.output(self.valve_in_med1,  0)
-        GPIO.output(self.valve_out_med1, 0)
         GPIO.output(self.valve_in_med2,  0)
-        GPIO.output(self.valve_out_med2, 0)
+
 
     def clean_container(self, medium, clean_time):
         """Open Air-Valve for cleaning during clean_time
@@ -247,6 +249,8 @@ class Cycler():
             self.clean_container("Medium-2", clean_time)
         self.stop_test()
         print("Cycler_Harware_STOPPED")
+        self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST END")
+
 
 if __name__ == "__main__":
 

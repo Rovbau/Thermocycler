@@ -6,11 +6,12 @@
 from tkinter import *
 #from tkinter.tix import *
 from tkinter import messagebox
+from tkinter import scrolledtext
 from PIL import Image, ImageTk
 from Cycler_Hardware import *
 from threading import *
 import atexit
-import time
+from time import sleep, time, strftime
 import logging
 import pickle
 import sys
@@ -21,7 +22,6 @@ class Gui():
     def __init__(self, root):
         """Do GUI stuff and attach to ObserverPattern"""
         self.root = root
-        self.test_allready_started = False
 
         #label_frame = Frame(root, height = 100, width=200, borderwidth=3, relief=RIDGE)
         #label_frame.place (x= 550, y = 300)
@@ -38,6 +38,8 @@ class Gui():
         #Root Window
         self.root.title ("Thermocycling")
         self.root.geometry("1100x600+0+0")
+        #Scrollbar
+        self.scrollbar = Scrollbar(root)
         #Menu
         self.menu =     Menu(root)
         self.filemenu = Menu(self.menu)
@@ -136,7 +138,9 @@ class Gui():
         self.label_messwert_temp_R =    Label(root, text="26.3", relief = GROOVE, fg = "green")
         self.label_messwert_zyklen =    Label(root, text="0030", relief = GROOVE, fg = "green")
         #Textbox
-        self.text_verlauf =             Text(root, width=30, height=4)
+        self.text_verlauf =             scrolledtext.ScrolledText(root, height=4)
+        Font_tuple = ("Arial", 10)
+        self.text_verlauf.configure(font=Font_tuple)
         #Units
         self.label_ein_mess_temp_proben =Label(root, text="°C")
         self.label_ein_mess_temp_L =     Label(root, text="°C")
@@ -156,7 +160,7 @@ class Gui():
         self.label_messwert_temp_R.place     (x= 950, y = space*4, width= 50)
         self.label_messwert_zyklen.place     (x= 950, y = space*5, width= 50)
         #Textbox
-        self.text_verlauf.place              (x= 600, y = space*7)
+        self.text_verlauf.place              (x= 600, y = space*7, width=350)
         #Units
         self.label_ein_mess_temp_proben.place(x= 770, y = space*3)
         self.label_ein_mess_temp_L.place     (x= 770, y = space*4)
@@ -187,10 +191,11 @@ class Gui():
         self.button_start.configure(state=DISABLED)
         self.button_abbrechen.configure(state=NORMAL)
         user_values = self.get_user_inputs()
-        self.all_user_inputs_ok = TRUE          #FOR DEBUG ONLY
+        self.all_user_inputs_ok = TRUE          #FOR DEBUG COMMENT OUT
+
         if self.all_user_inputs_ok == TRUE:
             self.cycler.user_inputs(user_values)
-            self.cycler.start_test(True)
+            self.cycler.start_test()
             print("View: Start Cycling")
         else:
             messagebox.showerror("Falsche Benutzereingabe",
@@ -202,8 +207,9 @@ class Gui():
         "Stops the cycler thread, Modifies Button"
         print("View: Stoping cycling")
         self.cycler.stop_test()
-        self.button_start.configure(state=NORMAL)
         self.button_abbrechen.configure(state=DISABLED)
+        self.text_verlauf.insert(END,  strftime("%I:%M:%S ") + "Benutzer: Stop Test einleiten \n")
+        self.text_verlauf.see(END)
 
     def check_user_input_digit(self, text):
         """Check if user entered a Number
@@ -276,6 +282,7 @@ class Gui():
         messagebox.showerror("Cycler Error", "Die Pumpe benötigt zu viel zeit: " +"\n"
                              "Alle Ventile offen? NOT-AUS frei? Pegelstände ok?" +"\n"
                              "Pumpen zeit = "+ str(event.state))
+        self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Pumpen Error \n")
 
 
     def new_temp_values(self, dict_temp):
@@ -287,9 +294,15 @@ class Gui():
         """Gets different messages from cycler thread, generates root. events
            INPUT: str cycler-status"""
         if status == "PUMP_ERROR":
-            print("From Cycler: Pump error")
             root.event_generate("<<update_gui>>", when="tail", state=123)
-    
+        if status == "TEST END":
+            self.button_start.configure(state=NORMAL)
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Test gestoppt \n")
+            self.text_verlauf.see(END)
+        if status == "TEST START":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Test gestartet \n")
+            self.text_verlauf.see(END)
+
     def menu_stuff(self):
         print("menu_stuff")
 
