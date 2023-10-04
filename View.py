@@ -7,6 +7,7 @@ from tkinter import *
 #from tkinter.tix import *
 from tkinter import messagebox
 from tkinter import scrolledtext
+from tkinter import font
 from PIL import Image, ImageTk
 from Cycler_Hardware import *
 from threading import *
@@ -22,7 +23,9 @@ class Gui():
     def __init__(self, root):
         """Do GUI stuff and attach to ObserverPattern"""
         self.root = root
-
+        self.var_testende = StringVar(value="Entleeren")
+   
+        #print(standart_font.actual())
         #label_frame = Frame(root, height = 100, width=200, borderwidth=3, relief=RIDGE)
         #label_frame.place (x= 550, y = 300)
         #tip = Balloon(root)
@@ -38,6 +41,10 @@ class Gui():
         #Root Window
         self.root.title ("Thermocycling")
         self.root.geometry("1100x600+0+0")
+        #Change default Textfont
+        standart_font = font.nametofont("TkDefaultFont")
+        standart_font.configure(size=9, family="Segoe UI")
+        root.option_add("*Font", standart_font)
         #Scrollbar
         self.scrollbar = Scrollbar(root)
         #Menu
@@ -60,6 +67,7 @@ class Gui():
         self.label_solltemp_rechts =    Label(root, text="Rechts")
         self.label_medium_links =       Label(root, text="Medium Links")
         self.label_medium_rechts =      Label(root, text="Medium Rechts")
+        self.label_testende =           Label(root, text="Nach Testende", relief=GROOVE)
         self.label_optional =           Label(root, text="Optional", relief=GROOVE)
         self.label_logfile =            Label(root, text="Logfile erstellen, Dateiname")
         self.label_bericht =            Label(root, text="Bericht per E-mail senden an")
@@ -74,6 +82,10 @@ class Gui():
         self.entry_medium_rechts =      Entry(root, width = 10)
         self.entry_logfile =            Entry(root, width = 30)
         self.entry_email =              Entry(root, width = 30)
+        #Radiobutton
+        self.radiobutton_entleeren =    Radiobutton(root, text="Entleeren", variable = self.var_testende, value="Entleeren")
+        self.radiobutton_fill_1 =       Radiobutton(root, text="Füllen mit Medium 1" , variable = self.var_testende, value="Füllen 1")
+        self.radiobutton_fill_2 =       Radiobutton(root, text="Füllen mit Medium 2" , variable = self.var_testende, value="Füllen 2")
         #Units
         self.label_einheit_zyklen =     Label(root, text="1-1000")   
         self.label_einheit_reinigung =  Label(root, text="Sek.")
@@ -98,9 +110,10 @@ class Gui():
         self.label_solltemp_rechts.place     (x= 300, y = space*6)
         self.label_medium_links.place        (x= 10,  y = space*7)
         self.label_medium_rechts.place       (x= 250, y = space*7)
-        self.label_optional.place            (x= 10,  y = space*8)
-        self.label_logfile.place             (x= 10,  y = space*9)
-        self.label_bericht.place             (x= 10,  y = space*10)
+        self.label_testende.place            (x= 10,  y = space*8)
+        self.label_optional.place            (x= 10,  y = space*10)
+        self.label_logfile.place             (x= 10,  y = space*11)
+        self.label_bericht.place             (x= 10,  y = space*12)
         #Entries
         self.entry_zyklen.place              (x= 150, y = space*1, width= 50)
         self.entry_reinigungszeit.place      (x= 150, y = space*2, width= 50)
@@ -110,8 +123,12 @@ class Gui():
         self.entry_solltemp_rechts.place     (x= 350, y = space*6, width= 50)
         self.entry_medium_links.place        (x= 100, y = space*7, width= 50)
         self.entry_medium_rechts.place       (x= 350, y = space*7, width= 50)
-        self.entry_logfile.place             (x= 200, y = space*9, width= 200)
-        self.entry_email.place               (x= 200, y = space*10, width= 200)
+        self.entry_logfile.place             (x= 200, y = space*11, width= 200)
+        self.entry_email.place               (x= 200, y = space*12, width= 200)
+        #Radiobuttons
+        self.radiobutton_entleeren.place     (x= 10,  y = space*9)
+        self.radiobutton_fill_1.place        (x= 120, y = space*9)
+        self.radiobutton_fill_2.place        (x= 300, y = space*9)
         #Units
         self.label_einheit_zyklen.place      (x= 220, y = space*1)
         self.label_einheit_reinigung.place   (x= 220, y = space*2)
@@ -119,15 +136,15 @@ class Gui():
         self.label_einheit_dauer_R.place     (x= 420, y = space*4)
         self.label_einheit_temp_L.place      (x= 170, y = space*6)
         self.label_einheit_temp_R.place      (x= 420, y = space*6)
-        self.label_einheit_dateiendung.place (x= 420, y = space*9)
+        self.label_einheit_dateiendung.place (x= 420, y = space*11)
         #Buttons
-        self.button_start.place              (x= 10, y = space*11) 
-        self.button_abbrechen.place          (x= 250, y = space*11)
+        self.button_start.place              (x= 10, y = space*13) 
+        self.button_abbrechen.place          (x= 250, y = space*13)
                
         #*************************  Right  ******************************   
         self.label_messwerte =          Label(root, text="Aktuelle Messwerte" , relief=GROOVE)
         self.label_temperatur =         Label(root, text="Temperatur", relief=GROOVE)        
-        self.label_probenbehaelter =    Label(root, text="Probenbehaelter")
+        self.label_probenbehaelter =    Label(root, text="Probenbehälter")
         self.label_isttemp_L =          Label(root, text="Links")
         self.label_isttemp_R =          Label(root, text="Rechts")
         self.label_abg_zyklen =         Label(root, text="Abgeschlossene Zyklen")
@@ -192,6 +209,7 @@ class Gui():
         self.button_abbrechen.configure(state=NORMAL)
         user_values = self.get_user_inputs()
         self.all_user_inputs_ok = TRUE          #FOR DEBUG COMMENT OUT
+        print(self.var_testende.get())
 
         if self.all_user_inputs_ok == TRUE:
             self.cycler.user_inputs(user_values)
