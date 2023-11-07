@@ -18,6 +18,7 @@ GPIO.setmode(GPIO.BOARD)
 class Cycler():
     EVT_CYCLER_STATUS = "EVT_CYCLER_STATUS"
     EVT_TEMP = "EVT_TEMP"
+    EVT_CYCLES = "EVT_CYCLES"
 
     def __init__(self):
         self.run_cycler = True
@@ -85,6 +86,7 @@ class Cycler():
         else:
             print("Stop-Error: wrong Medium name")
         print("Stop Test")
+        self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "SAVE STATE")
 
 
     def user_inputs(self, inputs):
@@ -228,15 +230,18 @@ class Cycler():
     def loop(self):
         """Main loop for cycling. Controls Pump, valves, ... """
 
-        flush_time = 30
-        clean_time = 20
+        flush_time = 5
+        clean_time = 3
+        storage_medium = "Store-1"
+        max_cycles = 2
         
         counter = 0
 
-        while (self.run_cycler == True):
+        while (self.run_cycler == True) and (counter < max_cycles):
             print("Cycling...")
             counter = counter + 1
             print(counter)
+            self._notifyObservers(Cycler.EVT_CYCLES, counter)
 
             self.set_valves("Medium-1")
             self.fill("Medium-1")
@@ -247,6 +252,24 @@ class Cycler():
             self.fill("Medium-2")
             self.flush("Medium-2", flush_time)
             self.clean_container("Medium-2", clean_time)
+
+        self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "CYCLING END")
+
+        if storage_medium == None:
+            self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE NONE")
+        elif storage_medium == "Store-1":
+            self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE 1")
+            self.set_valves("Medium-1")
+            self.fill("Medium-1")
+            self.flush("Medium-1", 999999)
+        elif storage_medium == "Store-2":
+            self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE 2")
+            self.set_valves("Medium-2")
+            self.fill("Medium-2")
+            self.flush("Medium-2", 999999)
+        else:
+            print("Error wrong storage type")
+        
         self.stop_test()
         print("Cycler_Harware_STOPPED")
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST END")

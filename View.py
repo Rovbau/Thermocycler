@@ -195,6 +195,7 @@ class Gui():
         self.cycler = Cycler()
         self.cycler.attach(self.cycler.EVT_CYCLER_STATUS, self.cycler_status)
         self.cycler.attach(self.cycler.EVT_TEMP,          self.new_temp_values)
+        self.cycler.attach(self.cycler.EVT_CYCLES,       self.new_cycles_values)
   
 
     def cleanup(self):
@@ -306,6 +307,9 @@ class Gui():
     def new_temp_values(self, dict_temp):
         print(dict_temp)
         self.label_messwert_temp_L.configure(text=dict_temp["TEMP-1"])
+
+    def new_cycles_values(self, data):
+        self.label_messwert_zyklen.configure(text=data)
         
 
     def cycler_status(self, status):
@@ -316,11 +320,31 @@ class Gui():
         if status == "TEST END":
             self.button_start.configure(state=NORMAL)
             self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Test gestoppt \n")
-            self.text_verlauf.see(END)
+            self.text_verlauf.see(END)  
+
+        self.text_verlauf.insert(END, strftime("%I:%M:%S ") + str(status) + "\n")
+        self.text_verlauf.see(END)
+        return()
+             
         if status == "TEST START":
             self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Test gestartet \n")
             self.text_verlauf.see(END)
-
+        if status == "SAVE STATE":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Heruntergefahren, sicher \n")
+            self.text_verlauf.see(END)
+        if status == "CYCLING END":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Anzahl Zyklen erreicht \n")
+            self.text_verlauf.see(END)           
+        if status == "STORAGE NONE":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Lagerbedingung Entleeren \n")
+            self.text_verlauf.see(END)    
+        if status == "STORAGE 1":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Lagerbedingung Füllen Medium 1 \n")
+            self.text_verlauf.see(END) 
+        if status == "STORAGE 2":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Lagerbedingung Füllen Medium 2 \n")
+            self.text_verlauf.see(END) 
+    
     def menu_stuff(self):
         print("menu_stuff")
 
