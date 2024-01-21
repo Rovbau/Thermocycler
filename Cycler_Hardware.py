@@ -143,6 +143,7 @@ class Cycler():
             if time() - start_fill_time > 50:
                 fill_time_exceed = True
                 print("Filling takes to long ERROR")
+                self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "PUMP_ERROR")
                 sleep(0.5)
         print("Full")
 

@@ -52,7 +52,7 @@ class Gui():
         self.filemenu = Menu(self.menu)
         self.filemenu.add_command(label="Sichern", command = self.menu_stuff)
         self.filemenu.add_command(label="Laden", command = self.menu_stuff)
-        self.filemenu.add_command(label="Beenden", command = self.menu_stuff)
+        self.filemenu.add_command(label="Abbrechen", command = self.menu_stuff)
         self.menu.add_cascade(label="Datei",menu = self.filemenu)
         self.root.config(menu=self.menu)
         
@@ -65,8 +65,8 @@ class Gui():
         self.label_solltemp =           Label(root, text="Solltemperatur erfassen - für Auswertung", relief=GROOVE)
         self.label_solltemp_links =     Label(root, text="Links")
         self.label_solltemp_rechts =    Label(root, text="Rechts")
-        self.label_medium_links =       Label(root, text="Medium Links")
-        self.label_medium_rechts =      Label(root, text="Medium Rechts")
+        self.label_medium_links =       Label(root, text="Medium 1")
+        self.label_medium_rechts =      Label(root, text="Medium 2")
         self.label_testende =           Label(root, text="Nach Testende", relief=GROOVE)
         self.label_optional =           Label(root, text="Optional", relief=GROOVE)
         self.label_logfile =            Label(root, text="Logfile erstellen, Dateiname")
@@ -96,7 +96,7 @@ class Gui():
         self.label_einheit_dateiendung =Label(root, text=".log")
         #Buttons
         self.button_start =               Button(root, text="Start",     fg="blue",command=self.start_test, width = 20)
-        self.button_abbrechen =           Button(root, text="Abbrechen", fg="red" ,command=self.stop_test, width = 20, state = DISABLED)
+        self.button_abbrechen =           Button(root, text="Beenden", fg="red" ,command=self.stop_test, width = 20, state = DISABLED)
 
         #***  Place label Left  ***
         space = 40
@@ -145,8 +145,8 @@ class Gui():
         self.label_messwerte =          Label(root, text="Aktuelle Messwerte" , relief=GROOVE)
         self.label_temperatur =         Label(root, text="Temperatur", relief=GROOVE)        
         self.label_probenbehaelter =    Label(root, text="Probenbehälter")
-        self.label_isttemp_L =          Label(root, text="Links")
-        self.label_isttemp_R =          Label(root, text="Rechts")
+        self.label_isttemp_L =          Label(root, text="Medium 1")
+        self.label_isttemp_R =          Label(root, text="Medium 2")
         self.label_abg_zyklen =         Label(root, text="Abgeschlossene Zyklen")
         self.label_verlauf =            Label(root, text="Verlauf", relief=GROOVE)
         #Label measurements
@@ -298,10 +298,15 @@ class Gui():
 
     def meassage_from_cycler(self, event):
         """Root event, shows error-messages to the user"""
-        messagebox.showerror("Cycler Error", "Die Pumpe benötigt zu viel zeit: " +"\n"
-                             "Alle Ventile offen? NOT-AUS frei? Pegelstände ok?" +"\n"
-                             "Pumpen zeit = "+ str(event.state))
-        self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Pumpen Error \n")
+        print("SInd im Error")
+        messagebox.showerror("Zeitüberschreitung", "Das Füllen des Probenbehälters dauert zu lange." + "\n"
+                              +"(Dauer: " + str(event.state) + " Sekunden)" +"\n"
+                              + "\n"
+                              +"Stelle sicher, dass:" + "\n"
+                              +"- alle Ventile geöffnet sind" + "\n"
+                              +"- der NOT-AUS nicht ausgelöst ist" + "\n"
+                              +"- die Medienbehälter gefüllt sind" + "\n" )
+        #self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Fehler: Zeitüberschreitung Probenbehälter \n")
 
 
     def new_temp_values(self, dict_temp):
