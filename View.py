@@ -23,7 +23,7 @@ class Gui():
     def __init__(self, root):
         """Do GUI stuff and attach to ObserverPattern"""
         self.root = root
-        self.var_testende = StringVar(value="Entleeren")
+        
    
         #print(standart_font.actual())
         #label_frame = Frame(root, height = 100, width=200, borderwidth=3, relief=RIDGE)
@@ -73,9 +73,13 @@ class Gui():
         self.label_bericht =            Label(root, text="Bericht per E-mail senden an")
         #Entries
         self.entry_zyklen =             Entry(root, width = 10)
+        self.entry_zyklen.insert(0, "1") 
         self.entry_reinigungszeit =     Entry(root, width = 10)
+        self.entry_reinigungszeit.insert(0, "1")
         self.entry_dauer_links =        Entry(root, width = 10)
+        self.entry_dauer_links.insert(0,"1")
         self.entry_dauer_rechts =       Entry(root, width = 10)
+        self.entry_dauer_rechts.insert(0,"1")
         self.entry_solltemp_links =     Entry(root, width = 10)
         self.entry_solltemp_rechts =    Entry(root, width = 10)
         self.entry_medium_links =       Entry(root, width = 10)
@@ -83,9 +87,10 @@ class Gui():
         self.entry_logfile =            Entry(root, width = 30)
         self.entry_email =              Entry(root, width = 30)
         #Radiobutton
-        self.radiobutton_entleeren =    Radiobutton(root, text="Entleeren", variable = self.var_testende, value="Entleeren")
-        self.radiobutton_fill_1 =       Radiobutton(root, text="Füllen mit Medium 1" , variable = self.var_testende, value="Füllen 1")
-        self.radiobutton_fill_2 =       Radiobutton(root, text="Füllen mit Medium 2" , variable = self.var_testende, value="Füllen 2")
+        self.var_testende = StringVar(value="STORAGE NONE")         #Initial Value for radiobuttons
+        self.radiobutton_entleeren =    Radiobutton(root, text="Entleeren", variable = self.var_testende, value="STORAGE NONE")
+        self.radiobutton_fill_1 =       Radiobutton(root, text="Füllen mit Medium 1" , variable = self.var_testende, value="STORAGE 1")
+        self.radiobutton_fill_2 =       Radiobutton(root, text="Füllen mit Medium 2" , variable = self.var_testende, value="STORAGE 2")
         #Units
         self.label_einheit_zyklen =     Label(root, text="1-1000")   
         self.label_einheit_reinigung =  Label(root, text="Sek.")
@@ -190,7 +195,7 @@ class Gui():
         self.canvas.place (x= 600, y = 400)
         
         #Bind Event to Main Window
-        root.bind("<<update_gui>>", self.meassage_from_cycler)
+        root.bind("<<update_gui>>", self.show_pump_error)
         #Attach cycler to get messages from Cycler
         self.cycler = Cycler()
         self.cycler.attach(self.cycler.EVT_CYCLER_STATUS, self.cycler_status)
@@ -227,8 +232,7 @@ class Gui():
         print("View: Stoping cycling")
         self.cycler.stop_test()
         self.button_abbrechen.configure(state=DISABLED)
-        self.text_verlauf.insert(END,  strftime("%I:%M:%S ") + "Benutzer: Stop Test einleiten \n")
-        self.text_verlauf.see(END)
+
 
     def check_user_input_digit(self, text):
         """Check if user entered a Number
@@ -283,6 +287,9 @@ class Gui():
         email = self.entry_email.get()
         self.check_user_input_text(email)
 
+        testend = self.var_testende.get()
+        self.check_user_input_digit(testend)
+
         user_inputs["cycles"]           = cycles
         user_inputs["reinigungszeit"]   = reinigungszeit
         user_inputs["dauer_links"]      = dauer_links
@@ -293,10 +300,11 @@ class Gui():
         user_inputs["medium_rechts"]    = medium_rechts        
         user_inputs["logfile"]          = logfile
         user_inputs["email"]            = email
+        user_inputs["testend"]          = testend
         return(user_inputs)
 
 
-    def meassage_from_cycler(self, event):
+    def show_pump_error(self, event):
         """Root event, shows error-messages to the user"""
         print("SInd im Error")
         messagebox.showerror("Zeitüberschreitung", "Das Füllen des Probenbehälters dauert zu lange." + "\n"
@@ -316,39 +324,35 @@ class Gui():
     def new_cycles_values(self, data):
         self.label_messwert_zyklen.configure(text=data)
         
-
     def cycler_status(self, status):
         """Gets different messages from cycler thread, generates root. events
            INPUT: str cycler-status"""
         if status == "PUMP_ERROR":
             root.event_generate("<<update_gui>>", when="tail", state=123)
+        if status == "TEST START":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test gestartet... \n")
+            self.text_verlauf.see(END)
         if status == "TEST END":
             self.button_start.configure(state=NORMAL)
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Test gestoppt \n")
-            self.text_verlauf.see(END)  
-
-        self.text_verlauf.insert(END, strftime("%I:%M:%S ") + str(status) + "\n")
-        self.text_verlauf.see(END)
-        return()
-             
-        if status == "TEST START":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Test gestartet \n")
-            self.text_verlauf.see(END)
-        if status == "SAVE STATE":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Heruntergefahren, sicher \n")
+            self.button_abbrechen.configure(state=DISABLED)
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test beendet \n")
+            self.text_verlauf.see(END)              
+        if status == "STOPPING":
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test abbrechen - WARTEN - Entleere \n")
             self.text_verlauf.see(END)
         if status == "CYCLING END":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Anzahl Zyklen erreicht \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Zyklen erfolgreich beendet \n")
             self.text_verlauf.see(END)           
         if status == "STORAGE NONE":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Lagerbedingung Entleeren \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter entleeren \n")
             self.text_verlauf.see(END)    
         if status == "STORAGE 1":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Lagerbedingung Füllen Medium 1 \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter füllen Medium 1 \n")
             self.text_verlauf.see(END) 
         if status == "STORAGE 2":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Hardware: Lagerbedingung Füllen Medium 2 \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter füllen Medium 2 \n")
             self.text_verlauf.see(END) 
+        return()
     
     def menu_stuff(self):
         print("menu_stuff")

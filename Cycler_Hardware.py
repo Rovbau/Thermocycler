@@ -86,12 +86,11 @@ class Cycler():
         else:
             print("Stop-Error: wrong Medium name")
         print("Stop Test")
-        self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "SAVE STATE")
+        self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STOPPING")
 
 
     def user_inputs(self, inputs):
         self.user_data = inputs
-
 
     def set_valves(self, medium):
         """Sets valves On/Off for Medium"""
@@ -203,22 +202,21 @@ class Cycler():
     
         if medium == "Medium-1":
             GPIO.output(self.valve_out_med1, 1)
-            sleep(7)
+            sleep(2)
             GPIO.output(self.valve_cleaning, 1)
             sleep(clean_time)
         elif medium == "Medium-2":
             GPIO.output(self.valve_out_med2, 1)
-            sleep(7)
+            sleep(2)
             GPIO.output(self.valve_cleaning, 1)
             sleep(clean_time)
         else:
             print("Clean-Error: wrong Medium name")
             
-
         GPIO.output(self.valve_cleaning, 0)
-        sleep(3)
+        sleep(2)
         GPIO.output(self.valve_cleaning, 1)
-        sleep(3)
+        sleep(clean_time)
 
         print("Close clean valve")
         GPIO.output(self.valve_cleaning, 0)
@@ -229,14 +227,14 @@ class Cycler():
 
 
     def loop(self):
-        """Main loop for cycling. Controls Pump, valves, ... """
-
-        flush_time = 5
-        clean_time = 3
-        storage_medium = "Store-1"
-        max_cycles = 2
-        
+        """Main loop for cycling. Controls Pump, valves, ... """      
         counter = 0
+
+        max_cycles =     int(self.user_data["cycles"])
+        clean_time =     int(self.user_data["reinigungszeit"])
+        flush_time_1 =   int(self.user_data["dauer_links"])
+        flush_time_2 =   int(self.user_data["dauer_rechts"])
+        storage_medium = self.user_data["testend"]
 
         while (self.run_cycler == True) and (counter < max_cycles):
             print("Cycling...")
@@ -246,24 +244,24 @@ class Cycler():
 
             self.set_valves("Medium-1")
             self.fill("Medium-1")
-            self.flush("Medium-1", flush_time)
+            self.flush("Medium-1", flush_time_1)
             self.clean_container("Medium-1" ,clean_time)
 
             self.set_valves("Medium-2")
             self.fill("Medium-2")
-            self.flush("Medium-2", flush_time)
+            self.flush("Medium-2", flush_time_2)
             self.clean_container("Medium-2", clean_time)
 
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "CYCLING END")
 
-        if storage_medium == None:
+        if storage_medium == "STORAGE NONE":
             self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE NONE")
-        elif storage_medium == "Store-1":
+        elif storage_medium == "STORAGE 1":
             self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE 1")
             self.set_valves("Medium-1")
             self.fill("Medium-1")
             self.flush("Medium-1", 999999)
-        elif storage_medium == "Store-2":
+        elif storage_medium == "STORAGE 2":
             self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE 2")
             self.set_valves("Medium-2")
             self.fill("Medium-2")
@@ -272,7 +270,7 @@ class Cycler():
             print("Error wrong storage type")
         
         self.stop_test()
-        print("Cycler_Harware_STOPPED")
+        print("Cycler_Harware_Stop")
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST END")
 
 
