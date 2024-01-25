@@ -17,7 +17,6 @@ GPIO.setmode(GPIO.BOARD)
 
 class Cycler():
     EVT_CYCLER_STATUS = "EVT_CYCLER_STATUS"
-    EVT_TEMP = "EVT_TEMP"
     EVT_CYCLES = "EVT_CYCLES"
 
     def __init__(self):
@@ -32,8 +31,6 @@ class Cycler():
         self.valve_out_med2 = 22
         self.valve_cleaning = 32
         self.level_indicator_port = 40
-
-        atexit.register(self.stop_test)
 
         GPIO.setup(self.pump_1,         GPIO.OUT)
         GPIO.setup(self.pump_2,         GPIO.OUT)
@@ -64,9 +61,9 @@ class Cycler():
     def start_test(self):
         self.run_cycler = True
         print("Cycler: Starting")
-        ThreadEncoder=Thread(target=self.loop)
-        ThreadEncoder.daemon=True
-        ThreadEncoder.start()
+        ThreadLoop=Thread(target=self.loop)
+        ThreadLoop.daemon=True
+        ThreadLoop.start()
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST START")
 
 
@@ -143,6 +140,7 @@ class Cycler():
                 fill_time_exceed = True
                 print("Filling takes to long ERROR")
                 self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "PUMP_ERROR")
+                self.stop_test()
                 sleep(0.5)
         print("Full")
 
@@ -229,7 +227,7 @@ class Cycler():
     def loop(self):
         """Main loop for cycling. Controls Pump, valves, ... """      
         counter = 0
-
+        
         max_cycles =     int(self.user_data["cycles"])
         clean_time =     int(self.user_data["reinigungszeit"])
         flush_time_1 =   int(self.user_data["dauer_links"])
@@ -241,6 +239,7 @@ class Cycler():
             counter = counter + 1
             print(counter)
             self._notifyObservers(Cycler.EVT_CYCLES, counter)
+            self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "UPDATE TEMP DATA")
 
             self.set_valves("Medium-1")
             self.fill("Medium-1")
@@ -273,8 +272,19 @@ class Cycler():
         print("Cycler_Harware_Stop")
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST END")
 
+        
+
 
 if __name__ == "__main__":
 
     cycler = Cycler()
+
+    cycler.user_data                   = {}
+    cycler.user_data["cycles"]         = "1"
+    cycler.user_data["reinigungszeit"] = "1"
+    cycler.user_data["dauer_links"]    = "1"
+    cycler.user_data["dauer_rechts"]   = "1"
+    cycler.user_data["testend"]        = "STORAGE 1"
+
+    atexit.register(cycler.stop_test)
     cycler.loop()

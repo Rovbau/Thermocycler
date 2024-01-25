@@ -20,15 +20,15 @@ class GenerateExcel():
     def add_header(self):
         """Adds some header information to cells"""
         font = Font(size=16)
-        self.ws.column_dimensions['A'].width = 20
+        self.ws.column_dimensions['A'].width = 30
         self.ws['A1'].font = font
-        self.ws['A1'] = "Thermocycler LOGFILE"
-        self.ws['A2'] = "generated bei Thermocycler.py"
-        self.ws['A4'] = "Date:"
+        self.ws['A1'] = "Thermocycler Prüfbericht"
+        self.ws['A2'] = "erzeugt von View.py (Thermocycler)"
+        self.ws['A4'] = "Zeitstempel:"
         self.ws['B4'] = "Temp-1"
         self.ws['C4'] = "Temp-2"
-        self.ws['D4'] = "Temp-3"
-        self.ws['E4'] = "Remarks"
+        self.ws['D4'] = "Zyklen"
+
 
     def add_zell(self, position, value):
         """Adds values to cells

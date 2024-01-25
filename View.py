@@ -10,6 +10,8 @@ from tkinter import scrolledtext
 from tkinter import font
 from PIL import Image, ImageTk
 from Cycler_Hardware import *
+from DS18B20 import *
+from GenExcel import *
 from threading import *
 import atexit
 from time import sleep, time, strftime
@@ -23,8 +25,9 @@ class Gui():
     def __init__(self, root):
         """Do GUI stuff and attach to ObserverPattern"""
         self.root = root
-        
-   
+        self.tempsensors = TempSensors()
+        self.excel = False
+
         #print(standart_font.actual())
         #label_frame = Frame(root, height = 100, width=200, borderwidth=3, relief=RIDGE)
         #label_frame.place (x= 550, y = 300)
@@ -112,7 +115,7 @@ class Gui():
         self.label_dauer_rechts.place        (x= 300, y = space*4)
         self.label_solltemp.place            (x= 10,  y = space*5)
         self.label_solltemp_links.place      (x= 10,  y = space*6)
-        self.label_solltemp_rechts.place     (x= 300, y = space*6)
+        self.label_solltemp_rechts.place     (x= 250, y = space*6)
         self.label_medium_links.place        (x= 10,  y = space*7)
         self.label_medium_rechts.place       (x= 250, y = space*7)
         self.label_testende.place            (x= 10,  y = space*8)
@@ -173,7 +176,7 @@ class Gui():
         self.label_temperatur.place          (x= 600, y = space*2)       
         self.label_probenbehaelter.place     (x= 600, y = space*3)
         self.label_isttemp_L.place           (x= 600, y = space*4)
-        self.label_isttemp_R.place           (x= 900, y = space*4)
+        self.label_isttemp_R.place           (x= 880, y = space*4)
         self.label_abg_zyklen.place          (x= 600, y = space*5)
         self.label_verlauf.place             (x= 600, y = space*6)
         #Label measurements
@@ -199,7 +202,6 @@ class Gui():
         #Attach cycler to get messages from Cycler
         self.cycler = Cycler()
         self.cycler.attach(self.cycler.EVT_CYCLER_STATUS, self.cycler_status)
-        self.cycler.attach(self.cycler.EVT_TEMP,          self.new_temp_values)
         self.cycler.attach(self.cycler.EVT_CYCLES,       self.new_cycles_values)
   
 
@@ -207,17 +209,30 @@ class Gui():
         """Quit GUI, Stop cycler test and clean-up"""
         print("Clean-Up")
         self.cycler.stop_test()
-        self.root.quit()
+        self.root.destroy()
 
     def start_test(self):
         "Starts the cycling test, checks user input, Modifies Buttons"
-        self.button_start.configure(state=DISABLED)
-        self.button_abbrechen.configure(state=NORMAL)
         user_values = self.get_user_inputs()
-        self.all_user_inputs_ok = TRUE          #FOR DEBUG COMMENT OUT
-        print(self.var_testende.get())
+        print(user_values)
+        #self.all_user_inputs_ok = TRUE          #FOR DEBUG COMMENT OUT
 
         if self.all_user_inputs_ok == TRUE:
+            #Buttons off
+            self.button_start.configure(state=DISABLED)
+            self.button_abbrechen.configure(state=NORMAL)
+            #Radiobuttons off
+            self.radiobutton_entleeren.configure(state=DISABLED)
+            self.radiobutton_fill_1.configure   (state=DISABLED)
+            self.radiobutton_fill_2.configure   (state=DISABLED)
+
+            #Generate Excelfile for loggging
+            if user_values["logfile"] != "":
+                self.generateExcel = GenerateExcel(self.entry_logfile.get())
+                self.generateExcel.add_header()
+                self.cell_counter = 6
+                self.excel = True
+
             self.cycler.user_inputs(user_values)
             self.cycler.start_test()
             print("View: Start Cycling")
@@ -231,8 +246,6 @@ class Gui():
         "Stops the cycler thread, Modifies Button"
         print("View: Stoping cycling")
         self.cycler.stop_test()
-        self.button_abbrechen.configure(state=DISABLED)
-
 
     def check_user_input_digit(self, text):
         """Check if user entered a Number
@@ -242,14 +255,14 @@ class Gui():
         else:
             self.all_user_inputs_ok = False
 
-    def check_user_input_text(self, text):
+    def check_user_input_optional(self, text):
         """Check if user entered a alpanumerical input
            INPUT: str user_text"""
-        if text.isalnum() == True:
+        if text.isalnum() == True or text == "":
             return()
         else:
-            self.all_user_inputs_ok = False    
-
+            self.all_user_inputs_ok = False 
+    
     def get_user_inputs(self):
         """Get the user_inputs from entry_witgets
            INPUT: -
@@ -270,25 +283,22 @@ class Gui():
         self.check_user_input_digit(dauer_rechts)
 
         solltemp_links = self.entry_solltemp_links.get()
-        self.check_user_input_digit(solltemp_links)
+        self.check_user_input_optional(solltemp_links)
 
         solltemp_rechts = self.entry_solltemp_rechts.get()
-        self.check_user_input_digit(solltemp_rechts)
+        self.check_user_input_optional(solltemp_rechts)
 
         medium_links = self.entry_medium_links.get()
-        self.check_user_input_digit(solltemp_links)
+        self.check_user_input_optional(solltemp_links)
 
         medium_rechts = self.entry_medium_rechts.get()
-        self.check_user_input_digit(solltemp_rechts)
+        self.check_user_input_optional(solltemp_rechts)
 
         logfile = self.entry_logfile.get()
-        self.check_user_input_text(logfile)
+        self.check_user_input_optional(logfile)
 
         email = self.entry_email.get()
-        self.check_user_input_text(email)
-
         testend = self.var_testende.get()
-        self.check_user_input_digit(testend)
 
         user_inputs["cycles"]           = cycles
         user_inputs["reinigungszeit"]   = reinigungszeit
@@ -308,7 +318,7 @@ class Gui():
         """Root event, shows error-messages to the user"""
         print("SInd im Error")
         messagebox.showerror("Zeitüberschreitung", "Das Füllen des Probenbehälters dauert zu lange." + "\n"
-                              +"(Dauer: " + str(event.state) + " Sekunden)" +"\n"
+                              +"(Dauer: " + "> 50" + " Sekunden)" +"\n"
                               + "\n"
                               +"Stelle sicher, dass:" + "\n"
                               +"- alle Ventile geöffnet sind" + "\n"
@@ -316,14 +326,18 @@ class Gui():
                               +"- die Medienbehälter gefüllt sind" + "\n" )
         #self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Fehler: Zeitüberschreitung Probenbehälter \n")
 
-
-    def new_temp_values(self, dict_temp):
-        print(dict_temp)
-        self.label_messwert_temp_L.configure(text=dict_temp["TEMP-1"])
-
     def new_cycles_values(self, data):
+        #Update cycle-counter label
         self.label_messwert_zyklen.configure(text=data)
-        
+        #Store new data in Excel
+        if self.excel == True:
+            self.cell_counter += 1
+            self.generateExcel.add_zell("A" + str(self.cell_counter), datetime.datetime.now())
+            self.generateExcel.add_zell("B" + str(self.cell_counter), self.label_messwert_temp_L.cget("text"))
+            self.generateExcel.add_zell("C" + str(self.cell_counter), self.label_messwert_temp_R.cget("text"))
+            self.generateExcel.add_zell("D" + str(self.cell_counter), self.label_messwert_zyklen.cget("text"))
+            self.generateExcel.store()
+               
     def cycler_status(self, status):
         """Gets different messages from cycler thread, generates root. events
            INPUT: str cycler-status"""
@@ -335,6 +349,10 @@ class Gui():
         if status == "TEST END":
             self.button_start.configure(state=NORMAL)
             self.button_abbrechen.configure(state=DISABLED)
+        #Radiobuttons on
+            self.radiobutton_entleeren.configure(state=NORMAL)
+            self.radiobutton_fill_1.configure   (state=NORMAL)
+            self.radiobutton_fill_2.configure   (state=NORMAL)
             self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test beendet \n")
             self.text_verlauf.see(END)              
         if status == "STOPPING":
@@ -351,7 +369,12 @@ class Gui():
             self.text_verlauf.see(END) 
         if status == "STORAGE 2":
             self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter füllen Medium 2 \n")
-            self.text_verlauf.see(END) 
+            self.text_verlauf.see(END)
+        if status == "UPDATE TEMP DATA":
+            temp_1 = self.tempsensors.read_temp(temp_device_one)
+            temp_2 = self.tempsensors.read_temp(temp_device_two)
+            self.label_messwert_temp_L.configure(text=str(temp_1))
+            self.label_messwert_temp_R.configure(text=str(temp_2))
         return()
     
     def menu_stuff(self):
@@ -362,6 +385,6 @@ if __name__ == "__main__":
 
     root=Tk()
     gui = Gui(root)
-    atexit.register(gui.cleanup)
+    root.protocol('WM_DELETE_WINDOW',gui.cleanup)
     root.mainloop()
 
