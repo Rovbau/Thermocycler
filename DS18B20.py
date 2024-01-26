@@ -33,8 +33,9 @@ class TempSensors():
 
 if __name__ == "__main__":
 
+    temp_sensors = TempSensors()
     while True:
-        print(TempSensors.read_temp(temp_device_one))
-        print(TempSensors.read_temp(temp_device_two))
+        print(temp_sensors.read_temp(temp_device_one))
+        print(temp_sensors.read_temp(temp_device_two))
         print("*********")
         time.sleep(1)

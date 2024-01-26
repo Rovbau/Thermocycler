@@ -57,7 +57,6 @@ class Cycler():
         for observer in self.observers[evt]:
             observer(data)
 
-
     def start_test(self):
         self.run_cycler = True
         print("Cycler: Starting")
@@ -82,7 +81,7 @@ class Cycler():
             GPIO.output(self.valve_out_med2, 1)
         else:
             print("Stop-Error: wrong Medium name")
-        print("Stop Test")
+        print("Cycler: Stop Test")
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STOPPING")
 
 
@@ -141,17 +140,17 @@ class Cycler():
                 print("Filling takes to long ERROR")
                 self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "PUMP_ERROR")
                 self.stop_test()
-                sleep(0.5)
-        print("Full")
+            if self.run_cycler == False:
+                return()
+            sleep(0.5)
+        print("Full " + str(self.current_medium))
 
         GPIO.output(self.pump_1, 0)
         GPIO.output(self.pump_2, 0)
 
-    
     def flush(self, medium, flush_time):
         flush_time_exceed = False
         start_flush_time = time()
-
 
         if self.run_cycler == False:
             return()
@@ -174,11 +173,9 @@ class Cycler():
         while (flush_time_exceed == False):
             if GPIO.input(self.level_indicator_port) == 1:
                 GPIO.output(pump, 0)
-                print("stopping")
                 sleep(3)
             else:
                 GPIO.output(pump, 1)
-
             if (time() - start_flush_time) > flush_time:
                     flush_time_exceed = True
             if self.run_cycler == False:
@@ -190,20 +187,21 @@ class Cycler():
         GPIO.output(self.valve_in_med1,  0)
         GPIO.output(self.valve_in_med2,  0)
 
-
     def clean_container(self, medium, clean_time):
         """Open Air-Valve for cleaning during clean_time
            INPUT: int clean_time"""
-        print("Cleaning...")
+
         if self.run_cycler == False:
             return()
     
-        if medium == "Medium-1":
+        if medium == "Medium-1" and self.current_medium == "Medium-1":
+            print("Clean Med-1")
             GPIO.output(self.valve_out_med1, 1)
             sleep(2)
             GPIO.output(self.valve_cleaning, 1)
             sleep(clean_time)
-        elif medium == "Medium-2":
+        elif medium == "Medium-2" and self.current_medium == "Medium-2":
+            print("Clean Med-2")
             GPIO.output(self.valve_out_med2, 1)
             sleep(2)
             GPIO.output(self.valve_cleaning, 1)
@@ -214,15 +212,13 @@ class Cycler():
         GPIO.output(self.valve_cleaning, 0)
         sleep(2)
         GPIO.output(self.valve_cleaning, 1)
-        sleep(clean_time)
+        sleep(2)
 
-        print("Close clean valve")
         GPIO.output(self.valve_cleaning, 0)
         GPIO.output(self.valve_in_med1,  0)
         GPIO.output(self.valve_out_med1, 0)
         GPIO.output(self.valve_in_med2,  0)
         GPIO.output(self.valve_out_med2, 0)
-
 
     def loop(self):
         """Main loop for cycling. Controls Pump, valves, ... """      
@@ -235,9 +231,9 @@ class Cycler():
         storage_medium = self.user_data["testend"]
 
         while (self.run_cycler == True) and (counter < max_cycles):
-            print("Cycling...")
             counter = counter + 1
-            print(counter)
+            print("Cycles: " + str(counter))
+
             self._notifyObservers(Cycler.EVT_CYCLES, counter)
             self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "UPDATE TEMP DATA")
 
@@ -253,6 +249,7 @@ class Cycler():
 
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "CYCLING END")
 
+        #After testend store at Medium..
         if storage_medium == "STORAGE NONE":
             self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "STORAGE NONE")
         elif storage_medium == "STORAGE 1":
@@ -269,10 +266,8 @@ class Cycler():
             print("Error wrong storage type")
         
         self.stop_test()
-        print("Cycler_Harware_Stop")
+        print("Cycler: All done")
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST END")
-
-        
 
 
 if __name__ == "__main__":

@@ -45,13 +45,16 @@ class GenerateExcel():
         try:
             self.wb.save(self.filename + ".xlsx")
             print("File saved: " + str(self.filename + ".xlsx"))
+            return(True)
         except PermissionError:
             print(sys.exc_info() [0])
-            self.filename = input("File allread open? Enter a new filename:")
-            self.store()
+            #self.filename = input("File allready open? Enter a new filename:")
+            #self.store()
+            raise
         except:
             print(sys.exc_info() [0])
             print("Unhandled Error file was not saved - sorry")
+            raise
 
 
 if __name__ == "__main__":

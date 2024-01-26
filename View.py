@@ -51,13 +51,13 @@ class Gui():
         #Scrollbar
         self.scrollbar = Scrollbar(root)
         #Menu
-        self.menu =     Menu(root)
-        self.filemenu = Menu(self.menu)
-        self.filemenu.add_command(label="Sichern", command = self.menu_stuff)
-        self.filemenu.add_command(label="Laden", command = self.menu_stuff)
-        self.filemenu.add_command(label="Abbrechen", command = self.menu_stuff)
-        self.menu.add_cascade(label="Datei",menu = self.filemenu)
-        self.root.config(menu=self.menu)
+        #self.menu =     Menu(root)
+        #self.filemenu = Menu(self.menu)
+        #self.filemenu.add_command(label="Sichern", command = self.menu_stuff)
+        #self.filemenu.add_command(label="Laden", command = self.menu_stuff)
+        #self.filemenu.add_command(label="Abbrechen", command = self.menu_stuff)
+        #self.menu.add_cascade(label="Datei",menu = self.filemenu)
+        #self.root.config(menu=self.menu)
         
         #*************************  Left  ******************************
         self.label_kalt_warm =          Label(root, text="Kalt-Warm-Zyklen")
@@ -76,7 +76,7 @@ class Gui():
         self.label_bericht =            Label(root, text="Bericht per E-mail senden an")
         #Entries
         self.entry_zyklen =             Entry(root, width = 10)
-        self.entry_zyklen.insert(0, "1") 
+        self.entry_zyklen.insert(0, "2") 
         self.entry_reinigungszeit =     Entry(root, width = 10)
         self.entry_reinigungszeit.insert(0, "1")
         self.entry_dauer_links =        Entry(root, width = 10)
@@ -101,7 +101,7 @@ class Gui():
         self.label_einheit_dauer_R =    Label(root, text="Sek.")
         self.label_einheit_temp_L =     Label(root, text="°C")
         self.label_einheit_temp_R =     Label(root, text="°C")
-        self.label_einheit_dateiendung =Label(root, text=".log")
+        self.label_einheit_dateiendung =Label(root, text=".xlsx")
         #Buttons
         self.button_start =               Button(root, text="Start",     fg="blue",command=self.start_test, width = 20)
         self.button_abbrechen =           Button(root, text="Beenden", fg="red" ,command=self.stop_test, width = 20, state = DISABLED)
@@ -158,12 +158,12 @@ class Gui():
         self.label_abg_zyklen =         Label(root, text="Abgeschlossene Zyklen")
         self.label_verlauf =            Label(root, text="Verlauf", relief=GROOVE)
         #Label measurements
-        self.label_messwert_proben =    Label(root, text="24.1", relief = GROOVE, fg = "green")
-        self.label_messwert_temp_L =    Label(root, text="25.2", relief = GROOVE, fg = "green")
-        self.label_messwert_temp_R =    Label(root, text="26.3", relief = GROOVE, fg = "green")
-        self.label_messwert_zyklen =    Label(root, text="0030", relief = GROOVE, fg = "green")
+        self.label_messwert_proben =    Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_temp_L =    Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_temp_R =    Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_zyklen =    Label(root, text="-#-", relief = GROOVE, fg = "green")
         #Textbox
-        self.text_verlauf =             scrolledtext.ScrolledText(root, height=4)
+        self.text_verlauf =             scrolledtext.ScrolledText(root, height = 6)
         Font_tuple = ("Arial", 10)
         self.text_verlauf.configure(font=Font_tuple)
         #Units
@@ -212,10 +212,8 @@ class Gui():
         self.root.destroy()
 
     def start_test(self):
-        "Starts the cycling test, checks user input, Modifies Buttons"
+        "Starts the cycling test, checks user input, modifies buttons"
         user_values = self.get_user_inputs()
-        print(user_values)
-        #self.all_user_inputs_ok = TRUE          #FOR DEBUG COMMENT OUT
 
         if self.all_user_inputs_ok == TRUE:
             #Buttons off
@@ -228,10 +226,22 @@ class Gui():
 
             #Generate Excelfile for loggging
             if user_values["logfile"] != "":
-                self.generateExcel = GenerateExcel(self.entry_logfile.get())
-                self.generateExcel.add_header()
-                self.cell_counter = 6
-                self.excel = True
+                try:
+                    self.generateExcel = GenerateExcel(self.entry_logfile.get())
+                    self.generateExcel.add_header()
+                    self.cell_counter = 6
+                    self.excel = True
+                    self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Logdatei angelegt: " + str(user_values["logfile"]) + ".xlsx" + "\n")
+                except:
+                    self.text_verlauf.tag_config("color_tag", foreground='red')
+                    self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Logdatei nicht erstellt"  + "\n", "color_tag")
+                    messagebox.showerror("Dateifehler", "Kann Datei nicht erstellen:" +"\n"
+                                + "\n"
+                                +"-Datei schliessen" + "\n"
+                                +"-Genügend Speicherplatz vorhanden" +"\n"
+                                +"-Zugriffsrechte vorhanden")           
+            else:
+                self.excel = False
 
             self.cycler.user_inputs(user_values)
             self.cycler.start_test()
@@ -267,6 +277,7 @@ class Gui():
         """Get the user_inputs from entry_witgets
            INPUT: -
            RETURN:  dict {"field-name": "user-text" ... }"""
+        
         user_inputs = {}
         self.all_user_inputs_ok = True
 
@@ -313,10 +324,9 @@ class Gui():
         user_inputs["testend"]          = testend
         return(user_inputs)
 
-
     def show_pump_error(self, event):
         """Root event, shows error-messages to the user"""
-        print("SInd im Error")
+
         messagebox.showerror("Zeitüberschreitung", "Das Füllen des Probenbehälters dauert zu lange." + "\n"
                               +"(Dauer: " + "> 50" + " Sekunden)" +"\n"
                               + "\n"
@@ -324,10 +334,11 @@ class Gui():
                               +"- alle Ventile geöffnet sind" + "\n"
                               +"- der NOT-AUS nicht ausgelöst ist" + "\n"
                               +"- die Medienbehälter gefüllt sind" + "\n" )
-        #self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Fehler: Zeitüberschreitung Probenbehälter \n")
+        self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Zeitüberschreitung beim Füllen \n")
 
     def new_cycles_values(self, data):
-        #Update cycle-counter label
+        """Update cycle widget and add temp-data to Excel file"""
+
         self.label_messwert_zyklen.configure(text=data)
         #Store new data in Excel
         if self.excel == True:
@@ -339,7 +350,7 @@ class Gui():
             self.generateExcel.store()
                
     def cycler_status(self, status):
-        """Gets different messages from cycler thread, generates root. events
+        """Gets different messages from cycler thread, generates root.events
            INPUT: str cycler-status"""
         if status == "PUMP_ERROR":
             root.event_generate("<<update_gui>>", when="tail", state=123)
@@ -349,26 +360,26 @@ class Gui():
         if status == "TEST END":
             self.button_start.configure(state=NORMAL)
             self.button_abbrechen.configure(state=DISABLED)
-        #Radiobuttons on
+            #Radiobuttons on
             self.radiobutton_entleeren.configure(state=NORMAL)
             self.radiobutton_fill_1.configure   (state=NORMAL)
             self.radiobutton_fill_2.configure   (state=NORMAL)
             self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test beendet \n")
             self.text_verlauf.see(END)              
         if status == "STOPPING":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test abbrechen - WARTEN - Entleere \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Test abbrechen...WARTEN.. \n")
             self.text_verlauf.see(END)
         if status == "CYCLING END":
             self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Zyklen erfolgreich beendet \n")
             self.text_verlauf.see(END)           
         if status == "STORAGE NONE":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter entleeren \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Testende: Probenbehälter entleeren \n")
             self.text_verlauf.see(END)    
         if status == "STORAGE 1":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter füllen Medium 1 \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Testende: Probenbehälter füllen Medium 1 \n")
             self.text_verlauf.see(END) 
         if status == "STORAGE 2":
-            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Probenbehälter füllen Medium 2 \n")
+            self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Testende: Probenbehälter füllen Medium 2 \n")
             self.text_verlauf.see(END)
         if status == "UPDATE TEMP DATA":
             temp_1 = self.tempsensors.read_temp(temp_device_one)
@@ -377,9 +388,6 @@ class Gui():
             self.label_messwert_temp_R.configure(text=str(temp_2))
         return()
     
-    def menu_stuff(self):
-        print("menu_stuff")
-
 
 if __name__ == "__main__":
 
