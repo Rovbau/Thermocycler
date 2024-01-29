@@ -8,6 +8,7 @@ from tkinter import *
 from tkinter import messagebox
 from tkinter import scrolledtext
 from tkinter import font
+from datetime import datetime, timedelta
 from PIL import Image, ImageTk
 from Cycler_Hardware import *
 from DS18B20 import *
@@ -156,14 +157,16 @@ class Gui():
         self.label_isttemp_L =          Label(root, text="Medium 1")
         self.label_isttemp_R =          Label(root, text="Medium 2")
         self.label_abg_zyklen =         Label(root, text="Abgeschlossene Zyklen")
+        self.label_calc_testend =       Label(root, text="Testende am")
         self.label_verlauf =            Label(root, text="Verlauf", relief=GROOVE)
         #Label measurements
-        self.label_messwert_proben =    Label(root, text="-#-", relief = GROOVE, fg = "green")
-        self.label_messwert_temp_L =    Label(root, text="-#-", relief = GROOVE, fg = "green")
-        self.label_messwert_temp_R =    Label(root, text="-#-", relief = GROOVE, fg = "green")
-        self.label_messwert_zyklen =    Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_proben =         Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_temp_L =         Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_temp_R =         Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_zyklen =         Label(root, text="-#-", relief = GROOVE, fg = "green")
+        self.label_messwert_calc_testend =   Label(root, text="-#-", relief = GROOVE, fg = "green")
         #Textbox
-        self.text_verlauf =             scrolledtext.ScrolledText(root, height = 6)
+        self.text_verlauf =                  scrolledtext.ScrolledText(root, height = 6)
         Font_tuple = ("Arial", 10)
         self.text_verlauf.configure(font=Font_tuple)
         #Units
@@ -178,14 +181,16 @@ class Gui():
         self.label_isttemp_L.place           (x= 600, y = space*4)
         self.label_isttemp_R.place           (x= 880, y = space*4)
         self.label_abg_zyklen.place          (x= 600, y = space*5)
-        self.label_verlauf.place             (x= 600, y = space*6)
+        self.label_calc_testend.place        (x= 600, y = space*6) 
+        self.label_verlauf.place             (x= 600, y = space*7)
         #Label measurements
-        self.label_messwert_proben.place     (x= 700, y = space*3, width= 50)
-        self.label_messwert_temp_L.place     (x= 700, y = space*4, width= 50)
-        self.label_messwert_temp_R.place     (x= 950, y = space*4, width= 50)
-        self.label_messwert_zyklen.place     (x= 950, y = space*5, width= 50)
+        self.label_messwert_proben.place       (x= 700, y = space*3, width= 50)
+        self.label_messwert_temp_L.place       (x= 700, y = space*4, width= 50)
+        self.label_messwert_temp_R.place       (x= 950, y = space*4, width= 50)
+        self.label_messwert_zyklen.place       (x= 950, y = space*5, width= 50)
+        self.label_messwert_calc_testend.place (x= 850, y = space*6, width= 150)
         #Textbox
-        self.text_verlauf.place              (x= 600, y = space*7, width=350)
+        self.text_verlauf.place              (x= 600, y = space*8, width=350)
         #Units
         self.label_ein_mess_temp_proben.place(x= 770, y = space*3)
         self.label_ein_mess_temp_L.place     (x= 770, y = space*4)
@@ -213,7 +218,7 @@ class Gui():
 
     def start_test(self):
         "Starts the cycling test, checks user input, modifies buttons"
-        user_values = self.get_user_inputs()
+        self.user_values = self.get_user_inputs()
 
         if self.all_user_inputs_ok == TRUE:
             #Buttons off
@@ -225,13 +230,13 @@ class Gui():
             self.radiobutton_fill_2.configure   (state=DISABLED)
 
             #Generate Excelfile for loggging
-            if user_values["logfile"] != "":
+            if self.user_values["logfile"] != "":
                 try:
                     self.generateExcel = GenerateExcel(self.entry_logfile.get())
                     self.generateExcel.add_header()
                     self.cell_counter = 6
                     self.excel = True
-                    self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Logdatei angelegt: " + str(user_values["logfile"]) + ".xlsx" + "\n")
+                    self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Logdatei angelegt: " + str(self.user_values["logfile"]) + ".xlsx" + "\n")
                 except:
                     self.text_verlauf.tag_config("color_tag", foreground='red')
                     self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Logdatei nicht erstellt"  + "\n", "color_tag")
@@ -243,7 +248,7 @@ class Gui():
             else:
                 self.excel = False
 
-            self.cycler.user_inputs(user_values)
+            self.cycler.user_inputs(self.user_values)
             self.cycler.start_test()
             print("View: Start Cycling")
         else:
@@ -336,10 +341,22 @@ class Gui():
                               +"- die Medienbehälter gefüllt sind" + "\n" )
         self.text_verlauf.insert(END, strftime("%I:%M:%S ") + "Zeitüberschreitung beim Füllen \n")
 
-    def new_cycles_values(self, data):
+    def new_cycles_values(self, actual_cycles):
         """Update cycle widget and add temp-data to Excel file"""
+        self.label_messwert_zyklen.configure(text = actual_cycles)
 
-        self.label_messwert_zyklen.configure(text=data)
+        #Calc time for testend aprox.
+        actual =       int(actual_cycles)
+        max_cycles =   int(self.user_values["cycles"])
+        flush_time_1 = int(self.user_values["dauer_links"])
+        flush_time_2 = int(self.user_values["dauer_rechts"])
+        clean_time =   int(self.user_values["reinigungszeit"])
+        fill = 10
+        now = datetime.datetime.now()
+        duration = (max_cycles - actual) * (flush_time_1 + flush_time_2 + clean_time + (2 * fill))
+        var_testend = now + timedelta(seconds = duration)
+        self.label_messwert_calc_testend.configure(text = var_testend.strftime("%a %d %b %H:%Mh"))
+
         #Store new data in Excel
         if self.excel == True:
             self.cell_counter += 1
