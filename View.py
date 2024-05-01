@@ -196,11 +196,11 @@ class Gui():
         self.label_ein_mess_temp_L.place     (x= 770, y = space*4)
         self.label_ein_mess_temp_R.place     (x= 1020, y = space*4)  
         #Picture
-        self.canvas = Canvas(root, width=450, height=250)
-        img = ImageTk.PhotoImage(Image.open("WatersystemSmall.png").resize((450, 250), Image.ANTIALIAS))
-        self.canvas.background = img  # Keep a reference in case this code is put in a function.
-        bg = self.canvas.create_image(0, 0, anchor=NW, image=img)
-        self.canvas.place (x= 600, y = 400)
+         #self.canvas = Canvas(root, width=450, height=250)
+         #img = ImageTk.PhotoImage(Image.open("WatersystemSmall.png").resize((450, 250), Image.ANTIALIAS))
+         #self.canvas.background = img  # Keep a reference in case this code is put in a function.
+         #bg = self.canvas.create_image(0, 0, anchor=NW, image=img)
+         #self.canvas.place (x= 600, y = 500)
         
         #Bind Event to Main Window
         root.bind("<<update_gui>>", self.show_pump_error)
