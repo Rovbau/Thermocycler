@@ -28,6 +28,10 @@ class GenerateExcel():
         self.ws['B4'] = "Temp-1"
         self.ws['C4'] = "Temp-2"
         self.ws['D4'] = "Zyklen"
+        self.ws['E4'] = "Medium-1"
+        self.ws['F4'] = "Medium-1 Solltemp"        
+        self.ws['G4'] = "Medium-2"
+        self.ws['H4'] = "Medium-2 Solltemp"
 
 
     def add_zell(self, position, value):

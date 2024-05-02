@@ -89,7 +89,7 @@ _gpio_board_modes = {
     40: IN,
 }
 _gpio_modes = _gpio_bcm_modes.copy()
-_gpio_default_states = [LOW for i in range(54)]
+_gpio_default_states = [HIGH for i in range(54)]
 _gpio_states = _gpio_default_states[:]
 
 # ----------------------------------------------------------------------

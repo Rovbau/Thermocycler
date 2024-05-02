@@ -62,6 +62,7 @@ class Gui():
         
         #*************************  Left  ******************************
         self.label_kalt_warm =          Label(root, text="Kalt-Warm-Zyklen")
+        self.label_haltezeit =          Label(root, text="Haltezeit")
         self.label_reinigungszeit =     Label(root, text="Reinigungszeit")
         self.label_dauer =              Label(root, text="Dauer", relief=GROOVE)
         self.label_dauer_links =        Label(root, text="Links")
@@ -76,18 +77,37 @@ class Gui():
         self.label_logfile =            Label(root, text="Logfile erstellen, Dateiname")
         self.label_bericht =            Label(root, text="Bericht per E-mail senden an")
         #Entries
-        self.entry_zyklen =             Entry(root, width = 10)
-        self.entry_zyklen.insert(0, "2") 
-        self.entry_reinigungszeit =     Entry(root, width = 10)
-        self.entry_reinigungszeit.insert(0, "1")
-        self.entry_dauer_links =        Entry(root, width = 10)
-        self.entry_dauer_links.insert(0,"1")
-        self.entry_dauer_rechts =       Entry(root, width = 10)
-        self.entry_dauer_rechts.insert(0,"1")
-        self.entry_solltemp_links =     Entry(root, width = 10)
-        self.entry_solltemp_rechts =    Entry(root, width = 10)
-        self.entry_medium_links =       Entry(root, width = 10)
-        self.entry_medium_rechts =      Entry(root, width = 10)
+        self.var_entry_zyklen = StringVar()
+        self.entry_zyklen =             Entry(root, width = 10, textvariable = self.var_entry_zyklen)
+        self.entry_zyklen.insert(0, "2")
+
+        self.var_entry_haltezeit = StringVar()
+        self.entry_haltezeit =          Entry(root, width = 10, textvariable = self.var_entry_haltezeit)
+        self.entry_haltezeit.insert(0, "3")
+
+        self.var_reinigungszeit = StringVar()
+        self.entry_reinigungszeit =     Entry(root, width = 1, textvariable = self.var_reinigungszeit)
+        self.entry_reinigungszeit.insert(0, "3")
+
+        self.var_dauer_links = StringVar()
+        self.entry_dauer_links =        Entry(root, width = 10, textvariable = self.var_dauer_links)
+        self.entry_dauer_links.insert(0,"5")
+
+        self.var_dauer_rechts = StringVar()
+        self.entry_dauer_rechts =       Entry(root, width = 10, textvariable = self.var_dauer_rechts)
+        self.entry_dauer_rechts.insert(0,"5")
+
+        self.var_solltemp_links = StringVar()
+        self.entry_solltemp_links =     Entry(root, width = 10, textvariable = self.var_solltemp_links)
+
+        self.var_solltemp_rechts = StringVar()
+        self.entry_solltemp_rechts =    Entry(root, width = 10, textvariable = self.var_solltemp_rechts)
+
+        self.var_medium_links = StringVar()
+        self.entry_medium_links =       Entry(root, width = 10, textvariable = self.var_medium_links)
+
+        self.var_medium_rechts = StringVar()
+        self.entry_medium_rechts =      Entry(root, width = 10, textvariable = self.var_medium_rechts)
         self.entry_logfile =            Entry(root, width = 30)
         self.entry_email =              Entry(root, width = 30)
         #Radiobutton
@@ -98,6 +118,7 @@ class Gui():
         #Units
         self.label_einheit_zyklen =     Label(root, text="1-1000")   
         self.label_einheit_reinigung =  Label(root, text="Sek.")
+        self.label_einheit_haltezeit =  Label(root, text="Sek.")
         self.label_einheit_dauer_L =    Label(root, text="Sek.")
         self.label_einheit_dauer_R =    Label(root, text="Sek.")
         self.label_einheit_temp_L =     Label(root, text="°C")
@@ -109,8 +130,9 @@ class Gui():
 
         #***  Place label Left  ***
         space = 40
-        self.label_kalt_warm.place           (x= 10,  y = space*1)       
+        self.label_kalt_warm.place           (x= 10,  y = space*1)     
         self.label_reinigungszeit.place      (x= 10,  y = space*2)
+        self.label_haltezeit.place           (x= 280, y = space*2)  
         self.label_dauer.place               (x= 10,  y = space*3)
         self.label_dauer_links.place         (x= 10,  y = space*4)
         self.label_dauer_rechts.place        (x= 300, y = space*4)
@@ -126,6 +148,7 @@ class Gui():
         #Entries
         self.entry_zyklen.place              (x= 150, y = space*1, width= 50)
         self.entry_reinigungszeit.place      (x= 150, y = space*2, width= 50)
+        self.entry_haltezeit.place           (x= 350, y = space*2, width= 50)
         self.entry_dauer_links.place         (x= 100, y = space*4, width= 50)
         self.entry_dauer_rechts.place        (x= 350, y = space*4, width= 50)
         self.entry_solltemp_links.place      (x= 100, y = space*6, width= 50)
@@ -141,6 +164,7 @@ class Gui():
         #Units
         self.label_einheit_zyklen.place      (x= 220, y = space*1)
         self.label_einheit_reinigung.place   (x= 220, y = space*2)
+        self.label_einheit_haltezeit.place   (x= 420, y = space*2)
         self.label_einheit_dauer_L.place     (x= 170, y = space*4)
         self.label_einheit_dauer_R.place     (x= 420, y = space*4)
         self.label_einheit_temp_L.place      (x= 170, y = space*6)
@@ -207,12 +231,12 @@ class Gui():
         #Attach cycler to get messages from Cycler
         self.cycler = Cycler()
         self.cycler.attach(self.cycler.EVT_CYCLER_STATUS, self.cycler_status)
-        self.cycler.attach(self.cycler.EVT_CYCLES,       self.new_cycles_values)
+        self.cycler.attach(self.cycler.EVT_CYCLES, self.new_cycles_values)
   
 
     def cleanup(self):
         """Quit GUI, Stop cycler test and clean-up"""
-        print("Clean-Up")
+        print("View: Clean-Up")
         self.cycler.stop_test()
         self.root.destroy()
 
@@ -292,6 +316,9 @@ class Gui():
         reinigungszeit = self.entry_reinigungszeit.get()
         self.check_user_input_digit(reinigungszeit)
 
+        haltezeit = self.entry_haltezeit.get()
+        self.check_user_input_digit(haltezeit)
+
         dauer_links = self.entry_dauer_links.get()
         self.check_user_input_digit(dauer_links)
 
@@ -318,6 +345,7 @@ class Gui():
 
         user_inputs["cycles"]           = cycles
         user_inputs["reinigungszeit"]   = reinigungszeit
+        user_inputs["haltezeit"]        = haltezeit
         user_inputs["dauer_links"]      = dauer_links
         user_inputs["dauer_rechts"]     = dauer_rechts
         user_inputs["solltemp_links"]   = solltemp_links
@@ -364,6 +392,10 @@ class Gui():
             self.generateExcel.add_zell("B" + str(self.cell_counter), self.label_messwert_temp_L.cget("text"))
             self.generateExcel.add_zell("C" + str(self.cell_counter), self.label_messwert_temp_R.cget("text"))
             self.generateExcel.add_zell("D" + str(self.cell_counter), self.label_messwert_zyklen.cget("text"))
+            self.generateExcel.add_zell("E" + str(self.cell_counter), self.var_medium_links.get())
+            self.generateExcel.add_zell("F" + str(self.cell_counter), self.var_solltemp_links.get())
+            self.generateExcel.add_zell("G" + str(self.cell_counter), self.var_medium_rechts.get())
+            self.generateExcel.add_zell("H" + str(self.cell_counter), self.var_solltemp_rechts.get())
             self.generateExcel.store()
                
     def cycler_status(self, status):
