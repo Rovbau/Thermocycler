@@ -75,7 +75,6 @@ class Cycler():
         self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "TEST START")
         
 
-
     def stop_test(self):
         """Set machine to a save state"""
         self.run_cycler = False
@@ -110,7 +109,7 @@ class Cycler():
             GPIO.output(self.valve_out_med2, 0)
             print("Valves for Med-1...")
             logging.debug("Valves for Med-1...")
-            "Cycler: Starting"
+
         elif medium == "Medium-2":
             self.current_medium = "Medium-2"
             GPIO.output(self.valve_in_med1,  0)
@@ -168,6 +167,7 @@ class Cycler():
 
 
     def flush(self, medium, flush_time, haltezeit):
+        """Flush for flush_time, between rest for time: 'haltezeit' then open outlet-valve for secs"""
         flush_time_exceed = False
         start_flush_time = time()
 
@@ -190,26 +190,42 @@ class Cycler():
             print("Pump-Error: wrong Medium name or false valve settings")
             logging.error("Pump-Error: wrong Medium name or false valve settings")
  
+        start_haltezeit = time()
 
         while (time() - start_flush_time) < flush_time:
-            if GPIO.input(self.level_indicator_port) == 1:
-                GPIO.output(pump, 0)
-                start_haltezeit = time()
-            else:
-                GPIO.output(pump, 1)
-                start_haltezeit = time()
+            start_haltezeit = time()
 
-            print("Haltezeit")
-            logging.debug("Haltezeit")
-
-            while (time() - start_haltezeit) < haltezeit:
-                sleep(1)
+            print("Flush Haltezeit")
+            logging.debug("Flush Haltezeit")
+            while (time() - start_haltezeit) < haltezeit:           
                 if self.run_cycler == False:
                     return()
-                
-            GPIO.output(outlet_valve,  1)
-            sleep(3)
-            GPIO.output(outlet_valve,  0)
+                if (time() - start_flush_time) > flush_time:
+                    break
+                sleep(0.5)
+
+            GPIO.output(outlet_valve, 1)
+            sleep(2)
+            GPIO.output(outlet_valve, 0)
+
+            start_fill_time = time()
+            flush_time_exceed = False
+
+            while (GPIO.input(self.level_indicator_port) == 0) and (flush_time_exceed == False):              
+                if (time() - start_fill_time) > 50:
+                    flush_time_exceed = True
+                    print("Flushing takes to long ERROR")
+                    logging.error("Flushing takes to long ERROR")
+                    self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "PUMP_ERROR")
+                    self.stop_test()
+                if self.run_cycler == False:
+                    return()
+                if (time() - start_flush_time) < flush_time:
+                    break
+                GPIO.output(pump, 1)
+                sleep(0.5)
+                    
+            GPIO.output(pump, 0)
 
         GPIO.output(self.pump_2, 0)
         GPIO.output(self.pump_1, 0)
@@ -312,7 +328,7 @@ if __name__ == "__main__":
     cycler.user_data                   = {}
     cycler.user_data["cycles"]         = "3"
     cycler.user_data["reinigungszeit"] = "2"
-    cycler.user_data["haltezeit"]      = "3"
+    cycler.user_data["haltezeit"]      = "5"
     cycler.user_data["dauer_links"]    = "15"
     cycler.user_data["dauer_rechts"]   = "15"
     cycler.user_data["testend"]        = "STORAGE 1"
