@@ -9,7 +9,7 @@ from tkinter import messagebox
 from tkinter import scrolledtext
 from tkinter import font
 from datetime import datetime, timedelta
-from PIL import Image, ImageTk
+#from PIL import Image, ImageTk
 from Cycler_Hardware import *
 from DS18B20 import *
 from GenExcel import *

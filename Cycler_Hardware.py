@@ -64,6 +64,19 @@ class Cycler():
             return
         for observer in self.observers[evt]:
             observer(data)
+    
+    def debounce_levelsensor(self):
+        counter = 3
+        while True:
+            if GPIO.input(self.level_indicator_port) == 1:
+              counter += 1
+            else:
+              counter -= 1
+            if counter >= 6:
+              return(1)
+            if counter <= 0:
+              return(0)
+            sleep(0.1)
 
     def start_test(self):
         self.run_cycler = True
@@ -149,7 +162,7 @@ class Cycler():
             print("Pump-Error: wrong Medium name or false valve settings")
             logging.error("Pump-Error: wrong Medium name or false valve settings")
 
-        while (GPIO.input(self.level_indicator_port) == 0) and (fill_time_exceed == False):
+        while (self.debounce_levelsensor() == 0) and (fill_time_exceed == False):
             if time() - start_fill_time > 50:
                 fill_time_exceed = True
                 print("Filling takes to long ERROR")
@@ -158,7 +171,7 @@ class Cycler():
                 self.stop_test()
             if self.run_cycler == False:
                 return()
-            sleep(0.5)
+            sleep(0.1)
         print("Full " + str(self.current_medium))
         logging.debug("Full " + str(self.current_medium))
 
@@ -199,10 +212,10 @@ class Cycler():
             logging.debug("Flush Haltezeit")
             while (time() - start_haltezeit) < haltezeit:           
                 if self.run_cycler == False:
-                    return()
+                    return
                 if (time() - start_flush_time) > flush_time:
                     break
-                sleep(0.5)
+                sleep(0.1)
 
             GPIO.output(outlet_valve, 1)
             sleep(2)
@@ -211,19 +224,20 @@ class Cycler():
             start_fill_time = time()
             flush_time_exceed = False
 
-            while (GPIO.input(self.level_indicator_port) == 0) and (flush_time_exceed == False):              
+            while (self.debounce_levelsensor() == 0) and (flush_time_exceed == False):              
+                print("Refill")
                 if (time() - start_fill_time) > 50:
-                    flush_time_exceed = True
+                    flush_time_exceed = False
                     print("Flushing takes to long ERROR")
                     logging.error("Flushing takes to long ERROR")
                     self._notifyObservers(Cycler.EVT_CYCLER_STATUS, "PUMP_ERROR")
                     self.stop_test()
                 if self.run_cycler == False:
                     return()
-                if (time() - start_flush_time) < flush_time:
+                if (time() - start_flush_time) > flush_time:
                     break
                 GPIO.output(pump, 1)
-                sleep(0.5)
+                sleep(0.1)
                     
             GPIO.output(pump, 0)
 
@@ -329,7 +343,7 @@ if __name__ == "__main__":
     cycler.user_data["cycles"]         = "3"
     cycler.user_data["reinigungszeit"] = "2"
     cycler.user_data["haltezeit"]      = "5"
-    cycler.user_data["dauer_links"]    = "15"
+    cycler.user_data["dauer_links"]    = "25"
     cycler.user_data["dauer_rechts"]   = "15"
     cycler.user_data["testend"]        = "STORAGE 1"
 
